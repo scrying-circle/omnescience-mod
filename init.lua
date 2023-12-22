@@ -187,30 +187,41 @@ local filenames = {
     [155] = 'zombie_weak.xml',
 }
 local nxml = dofile("mods/roomy_world/files/scripts/nxml.lua")
+
+local function handleAnimalAIComponent(comp)
+	comp:set_attr("creature_detection_range_x", 2000)
+	comp:set_attr("creature_detection_range_y", 2000)
+	comp:set_attr("creature_detection_angular_range_deg", 90)
+	comp:set_attr("creature_detection_check_every_x_frames", 30)
+	comp:set_attr("pathfinding_max_depth_no_target", 150)
+	comp:set_attr("pathfinding_max_depth_has_target", 200)
+	comp:set_attr("sense_creatures_through_walls", true)
+end
+local function handleGhostComponent(comp)
+	comp:set_attr("hunt_box_radius", 2000)
+	comp:set_attr("new_hunt_target_check_every", 30)
+end
+local function handleWormAIComponent(comp)
+	comp:set_attr("hunt_box_radius", 2000)
+	comp:set_attr("give_up_time_frames", 1800)
+end
+local function searchChildren(parent)
+	if parent.name == "AnimalAIComponent" then
+		handleAnimalAIComponent(parent)
+	elseif parent.name == "GhostComponent" then
+		handleGhostComponent(parent)
+	elseif parent.name == "WormAIComponent" then
+		handleWormAIComponent(parent)
+	end
+	for child in parent:each_child() do
+		searchChildren(child)
+	end
+end
+
 for k, dir in ipairs(filenames) do
 	local filepath = "data/entities/animals/" .. dir
 	local content = ModTextFileGetContent(filepath)
 	local xml = nxml.parse(content)
-	local base = xml:first_of("Base")
-	if base then
-		local animals = base:first_of("AnimalAIComponent")
-		local ghost = base:first_of("GhostComponent")
-		local worm = base:first_of("WormAIComponent")
-		if animals then
-			animals:set_attr("creature_detection_range_x", 2000)
-			animals:set_attr("creature_detection_range_y", 2000)
-			animals:set_attr("creature_detection_angular_range_deg", 90)
-			animals:set_attr("creature_detection_check_every_x_frames", 30)
-			animals:set_attr("pathfinding_max_depth_no_target", 150)
-			animals:set_attr("pathfinding_max_depth_has_target", 200)
-			animals:set_attr("sense_creatures_through_walls", true)
-		elseif ghost then
-			ghost:set_attr("hunt_box_radius", 2000)
-			ghost:set_attr("new_hunt_target_check_every", 30)
-		elseif worm then
-			worm:set_attr("hunt_box_radius", 2000)
-			worm:set_attr("give_up_time_frames", 1800)
-		end
-	end
+	searchChildren(xml)
 	ModTextFileSetContent(filepath, tostring(xml))
 end
